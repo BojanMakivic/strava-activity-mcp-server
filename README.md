@@ -1,0 +1,1 @@
+# strava-activity-mcp-server
