@@ -1,4 +1,5 @@
-# strava-activity-mcp-server
+# Strava Activity MCP Server
+![Image 1: Python Package](https://pypi-camo.freetls.fastly.net/0ecf904318113383d77ec39a9c48b8ba0d2baf38/68747470733a2f2f6769746875622e636f6d2f746f6d656b6b6f7262616b2f7374726176612d6d63702d7365727665722f776f726b666c6f77732f507974686f6e2532305061636b6167652f62616467652e737667)[![Image 2: License: MIT](https://pypi-camo.freetls.fastly.net/8645b002dd7ec1b54275a80574942e7a318e03c6/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f4c6963656e73652d4d49542d79656c6c6f772e737667)](https://opensource.org/licenses/ GNU GENERAL PUBLIC LICENSE)[![Image 3: Python 3.10](https://pypi-camo.freetls.fastly.net/ea10074cb289a2913e3e6b97173e8b2ce3051997/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f707974686f6e2d332e31302d626c75652e737667)](https://www.python.org/downloads/release/python-3100/)
 
 A small Model Context Protocol (MCP) server that exposes your Strava athlete data to language-model tooling.
 

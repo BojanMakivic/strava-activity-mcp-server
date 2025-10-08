@@ -80,17 +80,17 @@ def refresh_access_token(
 
 
 @mcp.tool("strava://athlete/stats")
-def get_athlete_stats(token: str) -> dict:
-    """Retrieve athlete activities (last 30) using an access token."""
+def get_athlete_stats(token: str) -> object:
+    """Retrieve athlete activities using an access token."""
     url = "https://www.strava.com/api/v3/athlete/activities?per_page=60"
     headers = {
         "accept": "application/json",
         "authorization": f"Bearer {token}"
     }
-    import json
     response = requests.get(url, headers=headers)
     response.raise_for_status()
-    return json.dumps(response.json(), indent=2)
+    # Return the parsed JSON (dict or list) instead of a JSON string so the return type matches.
+    return response.json()
 
 if __name__ == "__main__":
     mcp.run(transport="stdio")  # Run the server, using standard input/output for communication
