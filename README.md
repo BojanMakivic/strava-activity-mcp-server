@@ -124,5 +124,6 @@ This project is licensed under the GNU GENERAL PUBLIC LICENSE — see the `LICEN
 ## Links
 
 - Source: repository root
-- Documentation note: see `ref/mcp_pypi_example.md` for an example MCP configuration
+- Documentation note: see `README.md` for an example MCP configuration
+
 
