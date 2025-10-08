@@ -8,9 +8,26 @@ import urllib.parse
 
 @mcp.tool("strava://auth/url")
 
-def get_auth_url(client_id):
-    """Return the Strava OAuth authorization URL. Open this URL in a browser to get the code."""
-    return str(f"https://www.strava.com/oauth/authorize?client_id={client_id}&response_type=code&redirect_uri=https://developers.strava.com/oauth2-redirect/&approval_prompt=force&scope=read,activity:read_all")
+def get_auth_url(client_id: int | None = None):
+    """Return the Strava OAuth authorization URL. If client_id is not provided,
+    read it from the STRAVA_CLIENT_ID environment variable."""
+    if client_id is None:
+        client_id_env = os.getenv("STRAVA_CLIENT_ID")
+        if not client_id_env:
+            return {"error": "STRAVA_CLIENT_ID environment variable is not set"}
+        try:
+            client_id = int(client_id_env)
+        except ValueError:
+            return {"error": "STRAVA_CLIENT_ID must be an integer"}
+
+    params = {
+        "client_id": client_id,
+        "response_type": "code",
+        "redirect_uri": "https://developers.strava.com/oauth2-redirect/",
+        "approval_prompt": "force",
+        "scope": "read,activity:read_all",
+    }
+    return "https://www.strava.com/oauth/authorize?" + urllib.parse.urlencode(params)
 
 
 
