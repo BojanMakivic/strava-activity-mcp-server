@@ -1,7 +1,7 @@
 # Strava Activity MCP Server
-![Image 1: Python Package](https://pypi-camo.freetls.fastly.net/0ecf904318113383d77ec39a9c48b8ba0d2baf38/68747470733a2f2f6769746875622e636f6d2f746f6d656b6b6f7262616b2f7374726176612d6d63702d7365727665722f776f726b666c6f77732f507974686f6e2532305061636b6167652f62616467652e737667)
-[![Image 2: License: GNU](https://pypi-camo.freetls.fastly.net/8de17537dd1659a5a076ce547de301e27c839e67/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f4c6963656e73652d47504c76332d626c75652e737667)](https://opensource.org/licenses/gpl-3-0)
-[![Image 3: Python 3.13](https://pypi-camo.freetls.fastly.net/e4930d5d2a7b16dfd9891ecb7396975ef462cff3/68747470733a2f2f696d672e736869656c64732e696f2f707970692f707976657273696f6e732f696e6a782e7376673f6c6f676f3d707974686f6e266c6f676f436f6c6f723d7768697465)](https://www.python.org/downloads/release/python-3130/)
+![Python Package](https://github.com/tomekkorbak/strava-mcp-server/actions/workflows/python-package.yml/badge.svg)
+[![License: GNU](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://opensource.org/licenses/gpl-3-0)
+[![Python 3.13](https://img.shields.io/badge/python-3.13-blue?logo=python&logoColor=white)](https://www.python.org/downloads/release/python-3130/)
 
 A Model Context Protocol (MCP) server that exposes your Strava athlete data to language-model tooling.
 
@@ -127,6 +127,7 @@ This project is licensed under the GNU GENERAL PUBLIC LICENSE — see the `LICEN
 
 - Source: repository root
 - Documentation note: see `README.md` for an example MCP configuration
+
 
 
 
