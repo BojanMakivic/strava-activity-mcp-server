@@ -127,8 +127,3 @@ This project is licensed under the GNU GENERAL PUBLIC LICENSE — see the `LICEN
 - Documentation note: see `README.md` for an example MCP configuration
 
 
-
-
-
-
-
