@@ -97,16 +97,109 @@ def refresh_access_token(
 
 
 @mcp.tool("strava://athlete/stats")
-def get_athlete_stats(token: str) -> object:
-    """Retrieve athlete activities using an access token."""
+def _get_env_client_credentials() -> tuple[int | None, str | None]:
+    """Read client id and secret from environment and return (client_id, client_secret).
+
+    client_id will be returned as int if present and valid, otherwise None.
+    """
+    client_id = None
+    client_secret = os.getenv("STRAVA_CLIENT_SECRET")
+    client_id_env = os.getenv("STRAVA_CLIENT_ID")
+    if client_id_env:
+        try:
+            client_id = int(client_id_env)
+        except ValueError:
+            client_id = None
+    return client_id, client_secret
+
+
+def _ensure_access_token(token_or_tokens: object) -> tuple[str | None, dict | None]:
+    """Given either an access token string or the token dict returned by the token endpoints,
+    return a tuple (access_token, tokens_dict).
+
+    If a dict is provided and contains no valid access_token but has a refresh_token,
+    attempt to refresh using env client credentials. Returns (access_token, tokens_dict) or (None, None)
+    on failure.
+    """
+    # If token_or_tokens is a string, assume it's an access token.
+    if isinstance(token_or_tokens, str):
+        return token_or_tokens, None
+
+    # If it's a dict-like object, try to find access_token
+    if isinstance(token_or_tokens, dict):
+        access_token = token_or_tokens.get("access_token")
+        if access_token:
+            return access_token, token_or_tokens
+
+        # try refresh flow
+        refresh_token = token_or_tokens.get("refresh_token")
+        client_id = token_or_tokens.get("client_id")
+        client_secret = token_or_tokens.get("client_secret")
+
+        # fallback to env vars if client id/secret not in the dict
+        if not client_id or not client_secret:
+            env_client_id, env_client_secret = _get_env_client_credentials()
+            if not client_id:
+                client_id = env_client_id
+            if not client_secret:
+                client_secret = env_client_secret
+
+        if refresh_token and client_id and client_secret:
+            try:
+                new_tokens = refresh_access_token(refresh_token, int(client_id), client_secret)
+            except Exception as e:
+                print(f"refresh failed: {e}")
+                return None, None
+
+            access_token = new_tokens.get("access_token")
+            return access_token, new_tokens
+
+    return None, None
+
+
+@mcp.tool("strava://athlete/stats")
+def get_athlete_stats(token: object) -> object:
+    """Retrieve athlete activities using either an access token string or a token dict.
+
+    If a token dict is provided and the access token is missing/expired, the function will
+    attempt to refresh it (one attempt) using provided refresh token and client credentials
+    (falling back to STRAVA_CLIENT_ID/STRAVA_CLIENT_SECRET environment variables).
+    """
+    access_token, tokens_dict = _ensure_access_token(token)
+    if not access_token:
+        return {"error": "Could not obtain an access token"}
+
     url = "https://www.strava.com/api/v3/athlete/activities?per_page=60"
     headers = {
         "accept": "application/json",
-        "authorization": f"Bearer {token}"
+        "authorization": f"Bearer {access_token}"
     }
+
     response = requests.get(url, headers=headers)
-    response.raise_for_status()
-    # Return the parsed JSON (dict or list) instead of a JSON string so the return type matches.
+
+    # If unauthorized, try one refresh if we have a refresh token available
+    if response.status_code == 401 and isinstance(token, dict):
+        refresh_token = token.get("refresh_token") or (tokens_dict or {}).get("refresh_token")
+        if refresh_token:
+            client_id = token.get("client_id") or (tokens_dict or {}).get("client_id")
+            client_secret = token.get("client_secret") or (tokens_dict or {}).get("client_secret")
+            if not client_id or not client_secret:
+                env_client_id, env_client_secret = _get_env_client_credentials()
+                client_id = client_id or env_client_id
+                client_secret = client_secret or env_client_secret
+
+            if client_id and client_secret:
+                new_tokens = refresh_access_token(refresh_token, int(client_id), client_secret)
+                new_access = new_tokens.get("access_token")
+                if new_access:
+                    headers["authorization"] = f"Bearer {new_access}"
+                    response = requests.get(url, headers=headers)
+
+    try:
+        response.raise_for_status()
+    except requests.HTTPError:
+        return {"error": "request failed", "status_code": response.status_code, "response": response.text}
+
     return response.json()
 
 if __name__ == "__main__":
