@@ -1,7 +1,7 @@
 [project]
 name = "strava-activity-mcp-server"
-version = "0.1.4"
-description = "Trying to implement environment variables for client_id"
+version = "0.1.8"
+description = "STRAVA ACTIVITY MCP SERVER"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
