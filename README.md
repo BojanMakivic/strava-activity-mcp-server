@@ -112,6 +112,9 @@ npx @modelcontextprotocol/inspector uvx strava-activity-mcp-server
 
 This will attempt to start the server with the `uvx` transport and connect the inspector to the running MCP server instance named `strava-activity-mcp-server`.
 
+## Chat example using MCP in Msty Studio
+
+chat_1.jpg
 
 ## Contributing
 
