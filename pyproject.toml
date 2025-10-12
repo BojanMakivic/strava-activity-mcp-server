@@ -1,6 +1,6 @@
 [project]
 name = "strava-activity-mcp-server"
-version = "0.1.9"
+version = "1.0.0"
 description = "STRAVA ACTIVITY MCP SERVER"
 readme = "README.md"
 requires-python = ">=3.10"
