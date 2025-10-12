@@ -2,6 +2,7 @@
 ![Python Package](https://github.com/tomekkorbak/strava-mcp-server/actions/workflows/python-package.yml/badge.svg)
 [![License: GNU](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://opensource.org/licenses/gpl-3-0)
 [![Python 3.13](https://img.shields.io/badge/python-3.13-blue?logo=python&logoColor=white)](https://www.python.org/downloads/release/python-3130/)
+[![Image 4: PyPI - Downloads](https://pypi-camo.freetls.fastly.net/181f8d950cca6deba70a687f7d20516c0643a07f/68747470733a2f2f696d672e736869656c64732e696f2f707970692f646d2f6761727468)](https://pypistats.org/packages/strava-activity-mcp-server)
 
 A small Model Context Protocol (MCP) server that exposes your Strava athlete data to language-model tooling.
 
