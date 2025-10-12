@@ -27,6 +27,7 @@ def get_auth_url(client_id: int | None = None):
         "approval_prompt": "force",
         "scope": "read,activity:read_all",
     }
+    # Always return whole URL and not part of it
     return "https://www.strava.com/oauth/authorize?" + urllib.parse.urlencode(params)
 
 
