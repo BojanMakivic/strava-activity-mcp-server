@@ -114,7 +114,11 @@ This will attempt to start the server with the `uvx` transport and connect the i
 
 ## Chat example using MCP in Msty Studio
 
-chat_1.jpg
+![chat_1](https://github.com/user-attachments/assets/460cced5-15b3-41eb-9805-72966826ede8)
+![chat_2](https://github.com/user-attachments/assets/9ded03f3-0f86-400e-8ebc-c414d0346257)
+![chat_3](https://github.com/user-attachments/assets/d793c9a5-8fb2-430e-a0bf-679903cf3f97)
+![chat_4](https://github.com/user-attachments/assets/4a459c31-3b42-4c32-8685-e6dd851dadca)
+
 
 ## Contributing
 
@@ -128,6 +132,7 @@ This project is licensed under the GNU GENERAL PUBLIC LICENSE — see the `LICEN
 
 - Source: repository root
 - Documentation note: see `README.md` for an example MCP configuration
+
 
 
 
