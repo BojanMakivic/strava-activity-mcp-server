@@ -107,10 +107,10 @@ Any MCP-capable client can launch the server using a config similar to the follo
 To quickly test the server using the Model Context Protocol inspector tool, run:
 
 ```powershell
-npx @modelcontextprotocol/inspector uvx strava-mcp-server
+npx @modelcontextprotocol/inspector uvx strava-activity-mcp-server
 ```
 
-This will attempt to start the server with the `uvx` transport and connect the inspector to the running MCP server instance named `strava-mcp-server`.
+This will attempt to start the server with the `uvx` transport and connect the inspector to the running MCP server instance named `strava-activity-mcp-server`.
 
 
 ## Contributing

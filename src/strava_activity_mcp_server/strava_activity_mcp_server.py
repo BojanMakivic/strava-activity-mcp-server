@@ -32,6 +32,62 @@ def get_auth_url(client_id: int | None = None):
 
 
 
+@mcp.tool("strava://auth/refresh")
+def refresh_access_token(
+    refresh_token: str,
+    client_id: int | None = None,
+    client_secret: str | None = None,
+) -> dict:
+    """Refresh an access token using a refresh token."""
+    if not refresh_token:
+        return {"error": "refresh token is required"}
+    
+    if client_id is None:
+        client_id_env = os.getenv("STRAVA_CLIENT_ID")
+        if not client_id_env:
+            return {"error": "STRAVA_CLIENT_ID environment variable is not set"}
+        try:
+            client_id = int(client_id_env)
+        except ValueError:
+            return {"error": "STRAVA_CLIENT_ID must be an integer"}
+
+    if client_secret is None:
+        client_secret_env = os.getenv("STRAVA_CLIENT_SECRET")
+        if not client_secret_env:
+            return {"error": "STRAVA_CLIENT_SECRET environment variable is not set"}
+        try:
+            client_secret = str(client_secret_env)
+        except ValueError:
+            return {"error": "STRAVA_CLIENT_SECRET must be a string"}
+
+    resp = requests.post(
+        "https://www.strava.com/oauth/token",
+        data={
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "refresh_token": refresh_token,
+            "grant_type": "refresh_token",
+        },
+    )
+    
+    try:
+        resp.raise_for_status()
+    except requests.HTTPError:
+        return {"error": "token refresh failed", "status_code": resp.status_code, "response": resp.text}
+    except Exception as e:
+        return {"error": "token refresh failed", "status_code": resp.status_code, "response": resp.text, "error": str(e)}
+
+    tokens = resp.json()
+    print(tokens)  # Print tokens for debugging (optional)
+    
+    return {
+        "access_token": tokens.get("access_token"),
+        "refresh_token": tokens.get("refresh_token"),
+        "expires_at": tokens.get("expires_at"),
+        "expires_in": tokens.get("expires_in")
+    }
+
+
 @mcp.tool("strava://athlete/stats")
 def get_athlete_stats(
     code: str,
@@ -96,6 +152,31 @@ def get_athlete_stats(
         response = requests.get(url, headers=headers)
 
         return response.json()
+
+
+@mcp.tool("strava://athlete/stats-with-token")
+def get_athlete_stats_with_token(access_token: str) -> dict:
+    """Get athlete activities using an existing access token."""
+    if not access_token:
+        return {"error": "access token is required"}
+    
+    url = "https://www.strava.com/api/v3/athlete/activities?per_page=60"
+    headers = {
+        "accept": "application/json",
+        "authorization": f"Bearer {access_token}"
+    }
+
+    response = requests.get(url, headers=headers)
+    
+    try:
+        response.raise_for_status()
+    except requests.HTTPError:
+        return {"error": "API request failed", "status_code": response.status_code, "response": response.text}
+    except Exception as e:
+        return {"error": "API request failed", "status_code": response.status_code, "response": response.text, "error": str(e)}
+
+    return response.json()
+
 
 if __name__ == "__main__":
     mcp.run(transport="stdio")  # Run the server, using standard input/output for communication
