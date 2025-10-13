@@ -5,6 +5,34 @@ mcp = FastMCP("Strava")  # Initialize an MCP server instance with a descriptive 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import requests
 import urllib.parse
+import json
+from typing import Any, Dict
+
+TOKEN_STORE_FILENAME = "C:/Users/bma/strava_mcp_tokens.json"
+
+def _get_token_store_path() -> str:
+    home_dir = os.path.expanduser("~")
+    return os.path.join(home_dir, TOKEN_STORE_FILENAME)
+
+def _save_tokens_to_disk(tokens: Dict[str, Any]) -> dict:
+    try:
+        path = _get_token_store_path()
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(tokens, f)
+        return {"ok": True, "path": path}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+def _load_tokens_from_disk() -> dict:
+    try:
+        path = _get_token_store_path()
+        if not os.path.exists(path):
+            return {"ok": False, "error": "token store not found", "path": path}
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return {"ok": True, "tokens": data, "path": path}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
 
 @mcp.tool("strava://auth/url")
 def get_auth_url(client_id: int | None = None):
@@ -135,6 +163,17 @@ def get_athlete_stats(
 
     access_token = tokens.get("access_token")
     refresh_token = tokens.get("refresh_token")
+    
+    # Persist tokens for later refresh usage
+    _save_tokens_to_disk({
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "expires_at": tokens.get("expires_at"),
+        "expires_in": tokens.get("expires_in"),
+        "athlete": tokens.get("athlete"),
+        "token_type": tokens.get("token_type"),
+        "scope": tokens.get("scope"),
+    })
 
     # return {"tokens": tokens, "access_token": access_token, "refresh_token": refresh_token}
 
@@ -145,6 +184,15 @@ def get_athlete_stats(
     }
 
     response = requests.get(url, headers=headers)
+    return {
+        "activities": response.json(),
+        "tokens": {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "expires_at": tokens.get("expires_at"),
+            "expires_in": tokens.get("expires_in"),
+        }
+    }
 
     return response.json()
 
@@ -171,6 +219,24 @@ def get_athlete_stats_with_token(access_token: str) -> dict:
 
     return response.json()
 
+@mcp.tool("strava://auth/save")
+def save_tokens(tokens: dict | None = None) -> dict:
+    """Save tokens to local disk at ~/.strava_mcp_tokens.json. If tokens is not provided, no-op with error."""
+    if not tokens or not isinstance(tokens, dict):
+        return {"error": "tokens dict is required"}
+    result = _save_tokens_to_disk(tokens)
+    if not result.get("ok"):
+        return {"error": "failed to save tokens", **result}
+    return {"ok": True, "path": result.get("path")}
+
+
+@mcp.tool("strava://auth/load")
+def load_tokens() -> dict:
+    """Load tokens from local disk at ~/.strava_mcp_tokens.json."""
+    result = _load_tokens_from_disk()
+    if not result.get("ok"):
+        return {"error": result.get("error"), "path": result.get("path")}
+    return {"ok": True, "tokens": result.get("tokens"), "path": result.get("path")}
 
 if __name__ == "__main__":
     mcp.run(transport="stdio")  # Run the server, using standard input/output for communication
