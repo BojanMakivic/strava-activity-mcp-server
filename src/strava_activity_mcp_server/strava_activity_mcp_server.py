@@ -11,8 +11,8 @@ from typing import Any, Dict
 TOKEN_STORE_FILENAME = "strava_mcp_tokens.json"
 
 def _get_token_store_path() -> str:
-    module_dir = os.path.dirname(__file__)
-    return os.path.join(module_dir, TOKEN_STORE_FILENAME)
+    home_dir = os.path.expanduser("~")
+    return os.path.join(home_dir, TOKEN_STORE_FILENAME)
 
 def _save_tokens_to_disk(tokens: Dict[str, Any]) -> dict:
     try:
