@@ -8,11 +8,11 @@ import urllib.parse
 import json
 from typing import Any, Dict
 
-TOKEN_STORE_FILENAME = "C:/Users/bma/strava_mcp_tokens.json"
+TOKEN_STORE_FILENAME = ".strava_mcp_tokens.json"
 
 def _get_token_store_path() -> str:
-    home_dir = os.path.expanduser("~")
-    return os.path.join(home_dir, TOKEN_STORE_FILENAME)
+    module_dir = os.path.dirname(__file__)
+    return os.path.join(module_dir, TOKEN_STORE_FILENAME)
 
 def _save_tokens_to_disk(tokens: Dict[str, Any]) -> dict:
     try:
@@ -35,7 +35,7 @@ def _load_tokens_from_disk() -> dict:
         return {"ok": False, "error": str(e)}
 
 @mcp.tool("strava://auth/url")
-def get_auth_url(client_id: int | None = None):
+async def get_auth_url(client_id: int | None = None):
     """Return the Strava OAuth authorization URL. If client_id is not provided,
     read it from the STRAVA_CLIENT_ID environment variable."""
     if client_id is None:
@@ -58,7 +58,8 @@ def get_auth_url(client_id: int | None = None):
     return "https://www.strava.com/oauth/authorize?" + urllib.parse.urlencode(params)
 
 @mcp.tool("strava://auth/refresh")
-def refresh_access_token(
+async def refresh_access_token(
+    
     refresh_token: str,
     client_id: int | None = None,
     client_secret: str | None = None,
@@ -113,7 +114,7 @@ def refresh_access_token(
     }
 
 @mcp.tool("strava://athlete/stats")
-def get_athlete_stats(
+async def get_athlete_stats(
     code: str,
     client_id: int | None = None,
     client_secret: str | None = None,
@@ -197,7 +198,7 @@ def get_athlete_stats(
     return response.json()
 
 @mcp.tool("strava://athlete/stats-with-token")
-def get_athlete_stats_with_token(access_token: str) -> dict:
+async def get_athlete_stats_with_token(access_token: str) -> dict:
     """Get athlete activities using an existing access token."""
     if not access_token:
         return {"error": "access token is required"}
@@ -220,7 +221,7 @@ def get_athlete_stats_with_token(access_token: str) -> dict:
     return response.json()
 
 @mcp.tool("strava://auth/save")
-def save_tokens(tokens: dict | None = None) -> dict:
+async def save_tokens(tokens: dict | None = None) -> dict:
     """Save tokens to local disk at ~/.strava_mcp_tokens.json. If tokens is not provided, no-op with error."""
     if not tokens or not isinstance(tokens, dict):
         return {"error": "tokens dict is required"}
@@ -231,12 +232,46 @@ def save_tokens(tokens: dict | None = None) -> dict:
 
 
 @mcp.tool("strava://auth/load")
-def load_tokens() -> dict:
-    """Load tokens from local disk at ~/.strava_mcp_tokens.json."""
+async def load_tokens() -> dict:
+    """Load tokens from local disk at ~/.strava_mcp_tokens.json"""
     result = _load_tokens_from_disk()
     if not result.get("ok"):
         return {"error": result.get("error"), "path": result.get("path")}
     return {"ok": True, "tokens": result.get("tokens"), "path": result.get("path")}
+
+@mcp.tool("strava://athlete/refresh-and-stats")
+async def refresh_and_get_stats(client_id: int | None = None, client_secret: str | None = None) -> dict:
+    """Load saved refresh token, refresh access token, save it, then fetch activities."""
+    load_result = _load_tokens_from_disk()
+    if not load_result.get("ok"):
+        return {"error": "no saved tokens", "details": load_result}
+    saved = load_result.get("tokens", {})
+    refresh_token = saved.get("refresh_token")
+    if not refresh_token:
+        return {"error": "refresh_token not found in saved tokens"}
+
+    refreshed = await refresh_access_token(refresh_token=refresh_token, client_id=client_id, client_secret=client_secret)
+    if "error" in refreshed:
+        return {"error": "refresh failed", "details": refreshed}
+
+    # Save refreshed tokens
+    _save_tokens_to_disk(refreshed)
+
+    access_token = refreshed.get("access_token")
+    if not access_token:
+        return {"error": "no access_token after refresh"}
+
+    # Fetch activities with new token
+    activities = await get_athlete_stats_with_token(access_token)
+    return {"activities": activities, "tokens": refreshed}
+
+#@mcp.prompt
+#def greet_user_prompt(question: str) -> str:
+    #"""Generates a message orchestrating mcp tools"""
+    #return f"""
+    #Return a message for a user called '{question}'. 
+    #if the user is asking, use a formal style, else use a street style.
+    #"""
 
 if __name__ == "__main__":
     mcp.run(transport="stdio")  # Run the server, using standard input/output for communication
