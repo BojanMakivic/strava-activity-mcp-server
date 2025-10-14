@@ -1,7 +1,7 @@
 [project]
 name = "strava-activity-mcp-server"
 version = "0.2.3"
-description = "STRAVA ACTIVITY MCP SERVER"
+description = "Strava MCP server: one-time browser auth, then automatic refresh-token login"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

@@ -10,6 +10,8 @@
 
 A small Model Context Protocol (MCP) server that exposes your Strava athlete data to language-model tooling.
 
+After the first browser-based authorization, the server uses the saved `refresh_token` to automatically refresh your session; no further URL-redirected logins are required on subsequent runs.
+
 This package provides a lightweight MCP server which communicates with the Strava API and exposes a few helper tools (authorization URL, token exchange/refresh, and fetching athlete activities) that language models or other local tools can call.
 
 The project is intended to be used locally (for example with Claude MCP integrations) and is published on PyPI as `strava-activity-mcp-server`.
