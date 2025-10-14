@@ -8,7 +8,7 @@ import urllib.parse
 import json
 from typing import Any, Dict
 
-TOKEN_STORE_FILENAME = ".strava_mcp_tokens.json"
+TOKEN_STORE_FILENAME = "strava_mcp_tokens.json"
 
 def _get_token_store_path() -> str:
     module_dir = os.path.dirname(__file__)
