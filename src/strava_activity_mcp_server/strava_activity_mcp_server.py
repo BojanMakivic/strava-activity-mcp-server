@@ -279,8 +279,9 @@ async def start_session(client_id: int | None = None, client_secret: str | None 
                 result = await refresh_and_get_stats(client_id=client_id, client_secret=client_secret)
                 return {**result, "used_token_file": token_path}
     # Fall back to auth URL flow
-    url = await get_auth_url(client_id=client_id)
-    return {"auth_url": url, "token_file_checked": token_path}
+    else:
+        url = await get_auth_url(client_id=client_id)
+        return {"auth_url": url, "token_file_checked": token_path}
 
 #@mcp.prompt
 #def greet_user_prompt(question: str) -> str:
