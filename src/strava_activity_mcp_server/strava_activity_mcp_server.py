@@ -165,8 +165,8 @@ async def get_athlete_stats(
     access_token = tokens.get("access_token")
     refresh_token = tokens.get("refresh_token")
     
-    # Persist tokens for later refresh usage
-    _save_tokens_to_disk({
+    # Persist tokens for later refresh usage via the public save tool
+    save_result = await save_tokens({
         "access_token": access_token,
         "refresh_token": refresh_token,
         "expires_at": tokens.get("expires_at"),
@@ -192,7 +192,8 @@ async def get_athlete_stats(
             "refresh_token": refresh_token,
             "expires_at": tokens.get("expires_at"),
             "expires_in": tokens.get("expires_in"),
-        }
+        },
+        "save": save_result
     }
 
     return response.json()
@@ -242,7 +243,7 @@ async def load_tokens() -> dict:
 @mcp.tool("strava://athlete/refresh-and-stats")
 async def refresh_and_get_stats(client_id: int | None = None, client_secret: str | None = None) -> dict:
     """Load saved refresh token, refresh access token, save it, then fetch activities."""
-    load_result = _load_tokens_from_disk()
+    load_result = await load_tokens()
     if not load_result.get("ok"):
         return {"error": "no saved tokens", "details": load_result}
     saved = load_result.get("tokens", {})
@@ -255,7 +256,7 @@ async def refresh_and_get_stats(client_id: int | None = None, client_secret: str
         return {"error": "refresh failed", "details": refreshed}
 
     # Save refreshed tokens
-    _save_tokens_to_disk(refreshed)
+    await save_tokens(refreshed)
 
     access_token = refreshed.get("access_token")
     if not access_token:
