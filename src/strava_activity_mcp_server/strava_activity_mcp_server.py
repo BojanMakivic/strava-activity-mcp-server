@@ -269,11 +269,9 @@ async def refresh_and_get_stats(client_id: int | None = None, client_secret: str
 @mcp.tool("strava://session/start")
 async def start_session(client_id: int | None = None, client_secret: str | None = None) -> dict:
     """Start a session: if a refresh token exists, refresh and fetch; otherwise return auth URL."""
-    load_result = await load_tokens()
-    if load_result.get("ok"):
-        saved = load_result.get("tokens", {})
-        if saved.get("refresh_token"):
-            return await refresh_and_get_stats(client_id=client_id, client_secret=client_secret)
+    token_path = _get_token_store_path()
+    if os.path.exists(token_path):
+        return await refresh_and_get_stats(client_id=client_id, client_secret=client_secret)
     # Fall back to auth URL flow
     url = await get_auth_url(client_id=client_id)
     return {"auth_url": url}
