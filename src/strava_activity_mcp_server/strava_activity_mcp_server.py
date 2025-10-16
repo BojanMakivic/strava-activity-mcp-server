@@ -196,8 +196,6 @@ async def get_athlete_stats(
         "save": save_result
     }
 
-    return response.json()
-
 @mcp.tool("strava://athlete/stats-with-token")
 async def get_athlete_stats_with_token(access_token: str) -> dict:
     """Get athlete activities using an existing access token."""
@@ -219,7 +217,12 @@ async def get_athlete_stats_with_token(access_token: str) -> dict:
     except Exception as e:
         return {"error": "API request failed", "status_code": response.status_code, "response": response.text, "error": str(e)}
 
-    return response.json()
+    activities_data = response.json()
+    return {
+        "activities": activities_data,
+        "count": len(activities_data) if isinstance(activities_data, list) else 0,
+        "status": "success"
+    }
 
 @mcp.tool("strava://auth/save")
 async def save_tokens(tokens: dict | None = None) -> dict:
