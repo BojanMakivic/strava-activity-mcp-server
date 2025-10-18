@@ -118,8 +118,22 @@ async def get_athlete_stats(
     code: str,
     client_id: int | None = None,
     client_secret: str | None = None,
+    after: int | None = None,
+    before: int | None = None,
+    page: int | None = None,
+    per_page: int | None = None,
 ) -> dict:
-    """Exchange an authorization code for access + refresh tokens and get athlete activities."""
+    """Exchange an authorization code for access + refresh tokens and get athlete activities with optional filters.
+    
+    Args:
+        code: Authorization code from Strava OAuth
+        client_id: Strava client ID
+        client_secret: Strava client secret
+        after: An epoch timestamp to use for filtering activities that have taken place after a certain time
+        before: An epoch timestamp to use for filtering activities that have taken place before a certain time
+        page: The page of activities (default=1)
+        per_page: How many activities per page (default=30)
+    """
     if not code:
         return {"error": "authorization code is required"}
 
@@ -178,15 +192,38 @@ async def get_athlete_stats(
 
     # return {"tokens": tokens, "access_token": access_token, "refresh_token": refresh_token}
 
-    url = "https://www.strava.com/api/v3/athlete/activities?per_page=60"
+    # Build URL with query parameters
+    params = []
+    if after is not None:
+        params.append(f"after={after}")
+    if before is not None:
+        params.append(f"before={before}")
+    if page is not None:
+        params.append(f"page={page}")
+    if per_page is not None:
+        params.append(f"per_page={per_page}")
+    
+    # Default per_page to 30 if not specified (Strava API default)
+    if per_page is None:
+        params.append("per_page=30")
+    
+    query_string = "&".join(params) if params else ""
+    url = f"https://www.strava.com/api/v3/athlete/activities?{query_string}"
+    
+    # Debug output
+    print(f"DEBUG: Requesting URL: {url}")
+    
     headers = {
         "accept": "application/json",
         "authorization": f"Bearer {access_token}"
     }
 
     response = requests.get(url, headers=headers)
+    activities_data = response.json()
+    print(f"DEBUG: Response status: {response.status_code}, Activities count: {len(activities_data) if isinstance(activities_data, list) else 0}")
+    
     return {
-        "activities": response.json(),
+        "activities": activities_data,
         "tokens": {
             "access_token": access_token,
             "refresh_token": refresh_token,
@@ -197,32 +234,106 @@ async def get_athlete_stats(
     }
 
 @mcp.tool("strava://athlete/stats-with-token")
-async def get_athlete_stats_with_token(access_token: str) -> dict:
-    """Get athlete activities using an existing access token."""
+async def get_athlete_stats_with_token(
+    access_token: str,
+    after: int | None = None,
+    before: int | None = None,
+    page: int | None = None,
+    per_page: int | None = None
+) -> dict:
+    """Get athlete activities using an existing access token with optional filters.
+    
+    Args:
+        access_token: Strava access token
+        after: An epoch timestamp to use for filtering activities that have taken place after a certain time
+        before: An epoch timestamp to use for filtering activities that have taken place before a certain time
+        page: The page of activities (default=1)
+        per_page: How many activities per page (default=30)
+    """
     if not access_token:
         return {"error": "access token is required"}
     
-    url = "https://www.strava.com/api/v3/athlete/activities?per_page=60"
+    # Build URL with query parameters
+    params = []
+    if after is not None:
+        params.append(f"after={after}")
+    if before is not None:
+        params.append(f"before={before}")
+    if page is not None:
+        params.append(f"page={page}")
+    if per_page is not None:
+        params.append(f"per_page={per_page}")
+    
+    # Default per_page to 30 if not specified (Strava API default)
+    if per_page is None:
+        params.append("per_page=30")
+    
+    query_string = "&".join(params) if params else ""
+    url = f"https://www.strava.com/api/v3/athlete/activities?{query_string}"
+    
     headers = {
         "accept": "application/json",
         "authorization": f"Bearer {access_token}"
     }
 
-    response = requests.get(url, headers=headers)
-    
     try:
+        response = requests.get(url, headers=headers)
+        
+        # Include debug information in the response
+        #debug_info = {
+            #"request_url": url,
+            #"response_status": response.status_code,
+            #"response_headers": dict(response.headers),
+            #"filters_applied": {
+                #"after": after,
+                #"before": before,
+                #"page": page,
+                #"per_page": per_page
+            #}
+        #}
+        
         response.raise_for_status()
-    except requests.HTTPError:
-        return {"error": "API request failed", "status_code": response.status_code, "response": response.text}
+        
+        activities_data = response.json()
+        
+        return {
+            "activities": activities_data,
+            "count": len(activities_data) if isinstance(activities_data, list) else 0,
+            "status": "success",
+            "debug": debug_info
+        }
+        
+    except requests.HTTPError as e:
+        return {
+            "error": "API request failed", 
+            "status_code": response.status_code, 
+            "response": response.text,
+            "debug": {
+                "request_url": url,
+                "response_status": response.status_code,
+                "response_headers": dict(response.headers),
+                "filters_applied": {
+                    "after": after,
+                    "before": before,
+                    "page": page,
+                    "per_page": per_page
+                }
+            }
+        }
     except Exception as e:
-        return {"error": "API request failed", "status_code": response.status_code, "response": response.text, "error": str(e)}
-
-    activities_data = response.json()
-    return {
-        "activities": activities_data,
-        "count": len(activities_data) if isinstance(activities_data, list) else 0,
-        "status": "success"
-    }
+        return {
+            "error": "API request failed", 
+            "error_message": str(e),
+            "debug": {
+                "request_url": url,
+                "filters_applied": {
+                    "after": after,
+                    "before": before,
+                    "page": page,
+                    "per_page": per_page
+                }
+            }
+        }
 
 @mcp.tool("strava://auth/save")
 async def save_tokens(tokens: dict | None = None) -> dict:
@@ -244,8 +355,24 @@ async def load_tokens() -> dict:
     return {"ok": True, "tokens": result.get("tokens"), "path": result.get("path")}
 
 @mcp.tool("strava://athlete/refresh-and-stats")
-async def refresh_and_get_stats(client_id: int | None = None, client_secret: str | None = None) -> dict:
-    """Load saved refresh token, refresh access token, save it, then fetch activities."""
+async def refresh_and_get_stats(
+    client_id: int | None = None, 
+    client_secret: str | None = None,
+    after: int | None = None,
+    before: int | None = None,
+    page: int | None = None,
+    per_page: int | None = None
+) -> dict:
+    """Load saved refresh token, refresh access token, save it, then fetch activities with optional filters.
+    
+    Args:
+        client_id: Strava client ID
+        client_secret: Strava client secret
+        after: An epoch timestamp to use for filtering activities that have taken place after a certain time
+        before: An epoch timestamp to use for filtering activities that have taken place before a certain time
+        page: The page of activities (default=1)
+        per_page: How many activities per page (default=30)
+    """
     load_result = await load_tokens()
     if not load_result.get("ok"):
         return {"error": "no saved tokens", "details": load_result}
@@ -265,13 +392,46 @@ async def refresh_and_get_stats(client_id: int | None = None, client_secret: str
     if not access_token:
         return {"error": "no access_token after refresh"}
 
-    # Fetch activities with new token
-    activities = await get_athlete_stats_with_token(access_token)
-    return {"activities": activities, "tokens": refreshed}
+    # Fetch activities with new token and filters
+    activities = await get_athlete_stats_with_token(
+        access_token=access_token,
+        after=after,
+        before=before,
+        page=page,
+        per_page=per_page
+    )
+    return {
+        "activities": activities, 
+        "tokens": refreshed,
+        "debug": {
+            "filters_applied": {
+                "after": after,
+                "before": before,
+                "page": page,
+                "per_page": per_page
+            }
+        }
+    }
 
 @mcp.tool("strava://session/start")
-async def start_session(client_id: int | None = None, client_secret: str | None = None) -> dict:
-    """Start a session: if a refresh token exists, refresh and fetch; otherwise return auth URL."""
+async def start_session(
+    client_id: int | None = None, 
+    client_secret: str | None = None,
+    after: int | None = None,
+    before: int | None = None,
+    page: int | None = None,
+    per_page: int | None = None
+) -> dict:
+    """Start a session: if a refresh token exists, refresh and fetch; otherwise return auth URL.
+    
+    Args:
+        client_id: Strava client ID
+        client_secret: Strava client secret
+        after: An epoch timestamp to use for filtering activities that have taken place after a certain time
+        before: An epoch timestamp to use for filtering activities that have taken place before a certain time
+        page: The page of activities (default=1)
+        per_page: How many activities per page (default=30)
+    """
     token_path = _get_token_store_path()
     if os.path.exists(token_path):
         loaded = _load_tokens_from_disk()
@@ -279,7 +439,14 @@ async def start_session(client_id: int | None = None, client_secret: str | None 
             saved = loaded.get("tokens", {})
             refresh_token = saved.get("refresh_token")
             if isinstance(refresh_token, str) and refresh_token.strip():
-                result = await refresh_and_get_stats(client_id=client_id, client_secret=client_secret)
+                result = await refresh_and_get_stats(
+                    client_id=client_id, 
+                    client_secret=client_secret,
+                    after=after,
+                    before=before,
+                    page=page,
+                    per_page=per_page
+                )
                 return {**result, "used_token_file": token_path}
     # Fall back to auth URL flow
     else:

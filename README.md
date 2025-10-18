@@ -1,5 +1,6 @@
 # Strava Activity MCP Server
 ![Python Package](https://github.com/tomekkorbak/strava-mcp-server/actions/workflows/python-package.yml/badge.svg)
+![PyPI - Version](https://img.shields.io/pypi/v/strava-activity-mcp-server)
 [![License: GNU](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://opensource.org/licenses/gpl-3-0)
 [![Python 3.13](https://img.shields.io/badge/python-3.13-blue?logo=python&logoColor=white)](https://www.python.org/downloads/release/python-3130/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/strava-activity-mcp-server)](https://pypistats.org/packages/strava-activity-mcp-server)
@@ -83,10 +84,10 @@ The MCP server exposes the following tools (tool IDs shown). These map to functi
   - Inputs: `refresh_token` (str), `client_id` (int, optional), `client_secret` (str, optional)
   - Output: `{ access_token, refresh_token, expires_at, expires_in }`
 - `strava://athlete/stats` — Exchange an authorization `code` for tokens and then fetch recent activities.
-  - Inputs: `code` (str), `client_id` (int, optional), `client_secret` (str, optional)
+  - Inputs: `code` (str), `client_id` (int, optional), `client_secret` (str, optional), `after` (int, optional), `before` (int, optional), `page` (int, optional), `per_page` (int, optional)
   - Output: `{ activities, tokens, save }`
 - `strava://athlete/stats-with-token` — Fetch recent activities using an existing access token.
-  - Inputs: `access_token` (str)
+  - Inputs: `access_token` (str), `after` (int, optional), `before` (int, optional), `page` (int, optional), `per_page` (int, optional)
   - Output: Activity list (JSON)
 - `strava://auth/save` — Save tokens to `~\strava_mcp_tokens.json`.
   - Inputs: `tokens` (dict)
@@ -95,13 +96,35 @@ The MCP server exposes the following tools (tool IDs shown). These map to functi
   - Inputs: none
   - Output: `{ ok, tokens, path }` or error
 - `strava://athlete/refresh-and-stats` — Load saved refresh token, refresh access token, save it, and fetch activities.
-  - Inputs: `client_id` (int, optional), `client_secret` (str, optional)
+  - Inputs: `client_id` (int, optional), `client_secret` (str, optional), `after` (int, optional), `before` (int, optional), `page` (int, optional), `per_page` (int, optional)
   - Output: `{ activities, tokens }`
 - `strava://session/start` — Convenience entry: if tokens exist, refresh and fetch; otherwise return an auth URL to begin initial authorization.
-  - Inputs: `client_id` (int, optional), `client_secret` (str, optional)
+  - Inputs: `client_id` (int, optional), `client_secret` (str, optional), `after` (int, optional), `before` (int, optional), `page` (int, optional), `per_page` (int, optional)
   - Output: Either `{ activities, tokens }` or `{ auth_url, token_file_checked }`
 
 These tools are intended to be called by MCP clients.
+
+## Activity Filtering
+
+The server now supports advanced filtering for Strava activities through URL parameters. The following filter parameters are available for activity-related tools:
+
+- **`after`** (int, optional): An epoch timestamp to filter activities that have taken place after a certain time
+- **`before`** (int, optional): An epoch timestamp to filter activities that have taken place before a certain time  
+- **`page`** (int, optional): The page number of activities to retrieve (default=1)
+- **`per_page`** (int, optional): Number of activities per page (default=30, max=200)
+
+### Filtering Examples
+
+- Get activities from the last 30 days: `after=1640995200` (epoch timestamp for Jan 1, 2022)
+- Get activities from a specific date range: `after=1640995200&before=1643673600`
+- Get the first 10 activities: `page=1&per_page=10`
+- Get activities from page 2 with 50 per page: `page=2&per_page=50`
+
+These filters work with the following tools:
+- `strava://athlete/stats`
+- `strava://athlete/stats-with-token`
+- `strava://athlete/refresh-and-stats`
+- `strava://session/start`
 
 ## Example flows
 
@@ -113,6 +136,12 @@ These tools are intended to be called by MCP clients.
 2) Fetch recent activities
 
 - Use `strava://athlete/stats` with a valid access token. If the access token is expired, use the refresh flow to get a new access token.
+
+3) Fetch filtered activities
+
+- Get activities from the last 7 days: Use `strava://athlete/stats-with-token` with `after` parameter set to epoch timestamp
+- Get paginated results: Use `page` and `per_page` parameters to control the number of activities returned
+- Get activities from a specific date range: Combine `after` and `before` parameters
 
 ### Client config example and quick inspector test
 
