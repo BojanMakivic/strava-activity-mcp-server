@@ -6,9 +6,33 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import requests
 import urllib.parse
 import json
+import asyncio
 from typing import Any, Dict
 
 TOKEN_STORE_FILENAME = "strava_mcp_tokens.json"
+
+
+async def _call_maybe_async(fn, *args, **kwargs):
+    """Call fn which may be a tool wrapper or the original function.
+
+    Tries common wrapper attributes in order: __wrapped__, func, run. If the
+    resolved callable is async it will be awaited; otherwise it will be called
+    synchronously and its return value returned.
+    """
+    # Resolve possible wrapper -> underlying callable
+    candidate = getattr(fn, "__wrapped__", None) or getattr(fn, "func", None) or getattr(fn, "run", None) or fn
+
+    # If candidate is a bound method like run, ensure we call it correctly
+    try:
+        if asyncio.iscoroutinefunction(candidate):
+            return await candidate(*args, **kwargs)
+        # some wrappers expose a sync call
+        return candidate(*args, **kwargs)
+    except TypeError:
+        # Last-resort attempt: try calling the original fn directly (it may be awaitable)
+        if asyncio.iscoroutinefunction(fn):
+            return await fn(*args, **kwargs)
+        return fn(*args, **kwargs)
 
 def _get_token_store_path() -> str:
     home_dir = os.path.expanduser("~")
@@ -180,7 +204,7 @@ async def get_athlete_stats(
     refresh_token = tokens.get("refresh_token")
     
     # Persist tokens for later refresh usage via the public save tool
-    save_result = await save_tokens({
+    save_result = await _call_maybe_async(save_tokens, {
         "access_token": access_token,
         "refresh_token": refresh_token,
         "expires_at": tokens.get("expires_at"),
@@ -293,9 +317,21 @@ async def get_athlete_stats_with_token(
         #}
         
         response.raise_for_status()
-        
+
         activities_data = response.json()
-        
+
+        debug_info = {
+            "request_url": url,
+            "response_status": response.status_code,
+            "response_headers": dict(response.headers),
+            "filters_applied": {
+                "after": after,
+                "before": before,
+                "page": page,
+                "per_page": per_page
+            }
+        }
+
         return {
             "activities": activities_data,
             "count": len(activities_data) if isinstance(activities_data, list) else 0,
@@ -373,7 +409,7 @@ async def refresh_and_get_stats(
         page: The page of activities (default=1)
         per_page: How many activities per page (default=30)
     """
-    load_result = await load_tokens()
+    load_result = await _call_maybe_async(load_tokens)
     if not load_result.get("ok"):
         return {"error": "no saved tokens", "details": load_result}
     saved = load_result.get("tokens", {})
@@ -381,24 +417,25 @@ async def refresh_and_get_stats(
     if not refresh_token:
         return {"error": "refresh_token not found in saved tokens"}
 
-    refreshed = await refresh_access_token(refresh_token=refresh_token, client_id=client_id, client_secret=client_secret)
+    refreshed = await _call_maybe_async(refresh_access_token, refresh_token=refresh_token, client_id=client_id, client_secret=client_secret)
     if "error" in refreshed:
         return {"error": "refresh failed", "details": refreshed}
 
     # Save refreshed tokens
-    await save_tokens(refreshed)
+    await _call_maybe_async(save_tokens, refreshed)
 
     access_token = refreshed.get("access_token")
     if not access_token:
         return {"error": "no access_token after refresh"}
 
     # Fetch activities with new token and filters
-    activities = await get_athlete_stats_with_token(
+    activities = await _call_maybe_async(
+        get_athlete_stats_with_token,
         access_token=access_token,
         after=after,
         before=before,
         page=page,
-        per_page=per_page
+        per_page=per_page,
     )
     return {
         "activities": activities, 
@@ -439,19 +476,19 @@ async def start_session(
             saved = loaded.get("tokens", {})
             refresh_token = saved.get("refresh_token")
             if isinstance(refresh_token, str) and refresh_token.strip():
-                result = await refresh_and_get_stats(
-                    client_id=client_id, 
+                result = await _call_maybe_async(
+                    refresh_and_get_stats,
+                    client_id=client_id,
                     client_secret=client_secret,
                     after=after,
                     before=before,
                     page=page,
-                    per_page=per_page
+                    per_page=per_page,
                 )
                 return {**result, "used_token_file": token_path}
-    # Fall back to auth URL flow
-    else:
-        url = await get_auth_url(client_id=client_id)
-        return {"auth_url": url, "token_file_checked": token_path}
+    # Fall back to auth URL flow (file missing or unusable)
+    url = await _call_maybe_async(get_auth_url, client_id=client_id)
+    return {"auth_url": url, "token_file_checked": token_path}
 
 #@mcp.prompt
 #def greet_user_prompt(question: str) -> str:
