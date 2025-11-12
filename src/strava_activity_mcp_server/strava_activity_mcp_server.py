@@ -1,6 +1,6 @@
 import sys
 import os
-from mcp.server.fastmcp import FastMCP  # Import FastMCP, the quickstart server base
+from fastmcp import FastMCP  # Import FastMCP, the quickstart server base
 mcp = FastMCP("Strava")  # Initialize an MCP server instance with a descriptive name
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import requests
