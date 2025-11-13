@@ -87,25 +87,25 @@ async def refresh_access_token(
         except ValueError:
             return {"error": "STRAVA_CLIENT_SECRET must be a string"}
 
-    cmd = [
-    "curl", "-s", "-X", "POST",
-    "--data", f"client_id={client_id}",
-    "--data", f"client_secret={client_secret}",
-    "--data", f"refresh_token={refresh_token}",
-    "--data", "grant_type=refresh_token",
-    "https://www.strava.com/oauth/token",
-    ]
-
-    proc = subprocess.run(cmd, capture_output=True, text=True)
-    if proc.returncode != 0:
-        raise RuntimeError(f"curl failed: {proc.stderr.strip()}")
+    resp = requests.post(
+        "https://www.strava.com/oauth/token",
+        data={
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "refresh_token": refresh_token,
+            "grant_type": "refresh_token"
+        }
+    )
 
     try:
-        tokens = json.loads(proc.stdout)
-    except json.JSONDecodeError:
-        raise RuntimeError(f"Failed to parse JSON response: {proc.stdout!r}")
+        resp.raise_for_status()
+    except requests.HTTPError:
+        return {"error": "token refresh failed", "status_code": resp.status_code, "response": resp.text}
+    except Exception as e:
+        return {"error": "token refresh failed", "status_code": resp.status_code, "response": resp.text, "error": str(e)}
+
+    tokens = resp.json()
     print(tokens)  # Print tokens for debugging (optional)
-    
     return {
         "access_token": tokens.get("access_token"),
         "refresh_token": tokens.get("refresh_token"),
