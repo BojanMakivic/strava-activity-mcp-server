@@ -4,6 +4,7 @@
 [![License: GNU](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://opensource.org/licenses/gpl-3-0)
 [![Python 3.13](https://img.shields.io/badge/python-3.13-blue?logo=python&logoColor=white)](https://www.python.org/downloads/release/python-3130/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/strava-activity-mcp-server)](https://pypistats.org/packages/strava-activity-mcp-server)
+[![PyPI Downloads](https://static.pepy.tech/personalized-badge/strava-activity-mcp-server?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/strava-activity-mcp-server)
 
 ![image](https://github.com/user-attachments/assets/4bb214ca-1132-4e63-9390-d6eaddab50be)
 
@@ -188,6 +189,7 @@ This project is licensed under the GNU GENERAL PUBLIC LICENSE — see the `LICEN
 
 - Source: repository root
 - Documentation note: see `README.md` for an example MCP configuration
+
 
 
 
