@@ -4,7 +4,7 @@
 [![License: GNU](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://opensource.org/licenses/gpl-3-0)
 [![Python 3.13](https://img.shields.io/badge/python-3.13-blue?logo=python&logoColor=white)](https://www.python.org/downloads/release/python-3130/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/strava-activity-mcp-server)](https://pypistats.org/packages/strava-activity-mcp-server)
-[![PyPI Downloads](https://static.pepy.tech/personalized-badge/strava-activity-mcp-server?period=total&units=NONE&left_color=GRAY&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/strava-activity-mcp-server)
+[![PyPI Downloads](https://static.pepy.tech/personalized-badge/strava-activity-mcp-server?period=total&units=NONE&left_color=GRAY&right_color=GREEN&left_text=total_downloads)](https://pepy.tech/projects/strava-activity-mcp-server)
 
 ![image](https://github.com/user-attachments/assets/4bb214ca-1132-4e63-9390-d6eaddab50be)
 
@@ -60,7 +60,7 @@ This server requires Strava OAuth credentials to access athlete data. You will n
 Steps:
 
 1. Create a Strava API application at https://www.strava.com/settings/api and note your Client ID and Client Secret. Use `localhost` as the Authorization Callback Domain.
-2. Initial authorization: call the `strava://auth/url` tool to generate an authorization URL (see IMAGE below), open it in your browser, and grant access. This step is only needed the first time to obtain an authorization code.
+2. Initial authorization: call the `strava.auth.url` tool to generate an authorization URL (see IMAGE below), open it in your browser, and grant access. This step is only needed the first time to obtain an authorization code.
 
    ![auth](https://github.com/user-attachments/assets/a348ccc7-a4be-49fb-8f79-b88f9d80cfc9)
 
@@ -76,34 +76,46 @@ Steps:
 
 ## Exposed Tools (what the server provides)
 
-The MCP server exposes the following tools (tool IDs shown). These map to functions in `src/strava_activity_mcp_server/strava_activity_mcp_server.py` and cover both initial authorization and subsequent refresh flows:
+The MCP server exposes the following tools (tool IDs shown). These map to functions in `src/strava_activity_mcp_server/strava_activity_mcp_server.py` and cover both initial authorization and subsequent refresh flows.
 
-- `strava://auth/url` — Build the Strava OAuth authorization URL.
+Canonical tool IDs use dot notation (for example `strava.auth.url`). URI-style aliases (for example `strava://auth/url`) are kept for backwards compatibility.
+
+- `strava.auth.url` (alias: `strava://auth/url`) — Build the Strava OAuth authorization URL.
   - Inputs: `client_id` (int, optional; reads `STRAVA_CLIENT_ID` if omitted)
   - Output: Authorization URL string
-- `strava://auth/refresh` — Refresh an access token using a refresh token.
+- `strava.auth.refresh` (alias: `strava://auth/refresh`) — Refresh tokens using a refresh token and persist them locally.
   - Inputs: `refresh_token` (str), `client_id` (int, optional), `client_secret` (str, optional)
-  - Output: `{ access_token, refresh_token, expires_at, expires_in }`
-- `strava://athlete/stats` — Exchange an authorization `code` for tokens and then fetch recent activities.
+  - Output: sanitized status only (token values are not returned)
+- `strava.athlete.stats` (alias: `strava://athlete/stats`) — Exchange an authorization `code` for tokens and then fetch one page of recent activities.
   - Inputs: `code` (str), `client_id` (int, optional), `client_secret` (str, optional), `after` (int, optional), `before` (int, optional), `page` (int, optional), `per_page` (int, optional)
-  - Output: `{ activities, tokens, save }`
-- `strava://athlete/stats-with-token` — Fetch recent activities using an existing access token.
+  - Output: `{ activities, token_status, save }` (token values redacted)
+- `strava.athlete.stats-with-token` (alias: `strava://athlete/stats-with-token`) — Fetch one page of recent activities using an existing access token.
   - Inputs: `access_token` (str), `after` (int, optional), `before` (int, optional), `page` (int, optional), `per_page` (int, optional)
   - Output: Activity list (JSON)
-- `strava://auth/save` — Save tokens to `~\strava_mcp_tokens.json`.
+- `strava.auth.save` (alias: `strava://auth/save`) — Save tokens to `~\strava_mcp_tokens.json`.
   - Inputs: `tokens` (dict)
   - Output: `{ ok, path }` or error
-- `strava://auth/load` — Load tokens from `~\strava_mcp_tokens.json`.
+- `strava.auth.load` (alias: `strava://auth/load`) — Load tokens from `~\strava_mcp_tokens.json`.
   - Inputs: none
-  - Output: `{ ok, tokens, path }` or error
-- `strava://athlete/refresh-and-stats` — Load saved refresh token, refresh access token, save it, and fetch activities.
+  - Output: `{ ok, path, token_status }` or error (token values redacted)
+- `strava.athlete.refresh-and-stats` (alias: `strava://athlete/refresh-and-stats`) — Load saved refresh token, refresh access token, save it, and fetch one page of activities.
   - Inputs: `client_id` (int, optional), `client_secret` (str, optional), `after` (int, optional), `before` (int, optional), `page` (int, optional), `per_page` (int, optional)
-  - Output: `{ activities, tokens }`
-- `strava://session/start` — Convenience entry: if tokens exist, refresh and fetch; otherwise return an auth URL to begin initial authorization.
+  - Output: `{ activities, token_status }` (token values redacted)
+- `strava.session.start` (alias: `strava://session/start`) — Convenience entry: if tokens exist, refresh and fetch; otherwise return an auth URL to begin initial authorization.
   - Inputs: `client_id` (int, optional), `client_secret` (str, optional), `after` (int, optional), `before` (int, optional), `page` (int, optional), `per_page` (int, optional)
   - Output: Either `{ activities, tokens }` or `{ auth_url, token_file_checked }`
 
+- `strava.athlete.fetch-all` (alias: `strava://athlete/fetch-all`) — Fetch all pages deterministically.
+  - Inputs: `access_token` (optional), `after` (optional), `before` (optional), `per_page` (default `50`), `max_pages` (default `10`), `retry_count` (default `2`), `detail_level` (`summary` default, or `detailed`), `detail_max_rows` (capped)
+  - Stop behavior: iterates until page size is `< per_page` or `max_pages` is reached.
+  - Output (default): compact summary + meta; detailed rows only when explicitly requested.
+
 These tools are intended to be called by MCP clients.
+
+- `strava.trimp.banister` — Fetch all athlete activities (paged), filter to activities with heart-rate, compute Banister TRIMP, and rank variability.
+  - Alias: `strava://trimp/account-report`
+  - Inputs: `sex` (male/female), `hr_rest`, `hr_max`, optional paging (`per_page`, `max_pages`) and filters (`after`, `before`), plus `detail_level` (`summary` default, or `detailed`) and `detail_max_rows` (capped)
+  - Output (default): compact TRIMP summary and sport variability; detailed `activities` rows are only included in explicit detailed mode.
 
 ## Activity Filtering
 
@@ -112,7 +124,8 @@ The server now supports advanced filtering for Strava activities through URL par
 - **`after`** (int, optional): An epoch timestamp to filter activities that have taken place after a certain time
 - **`before`** (int, optional): An epoch timestamp to filter activities that have taken place before a certain time  
 - **`page`** (int, optional): The page number of activities to retrieve (default=1)
-- **`per_page`** (int, optional): Number of activities per page (default=30, max=200)
+- **`per_page`** (int, optional): Number of activities per page (max=200)
+  - Default values: `strava.athlete.stats` uses 30; analytics flows default to 50 for safer LLM context usage.
 
 ### Filtering Examples
 
@@ -122,27 +135,33 @@ The server now supports advanced filtering for Strava activities through URL par
 - Get activities from page 2 with 50 per page: `page=2&per_page=50`
 
 These filters work with the following tools:
-- `strava://athlete/stats`
-- `strava://athlete/stats-with-token`
-- `strava://athlete/refresh-and-stats`
-- `strava://session/start`
+- `strava.athlete.stats` / `strava://athlete/stats`
+- `strava.athlete.stats-with-token` / `strava://athlete/stats-with-token`
+- `strava.athlete.refresh-and-stats` / `strava://athlete/refresh-and-stats`
+- `strava.session.start` / `strava://session/start`
+- `strava.athlete.fetch-all` / `strava://athlete/fetch-all`
 
 ## Example flows
 
 1) Get an authorization URL and retrieve tokens
 
-- Call `strava://auth/url` with your `client_id` and open the returned URL in your browser.
+- Call `strava.auth.url` (or `strava://auth/url`) with your `client_id` and open the returned URL in your browser.
 - After authorizing, Strava will provide a `code`.
 
 2) Fetch recent activities
 
-- Use `strava://athlete/stats` with a valid access token. If the access token is expired, use the refresh flow to get a new access token.
+- Use `strava.athlete.stats` for single-page activity retrieval. If the access token is expired, use the refresh flow to get a new access token.
 
 3) Fetch filtered activities
 
-- Get activities from the last 7 days: Use `strava://athlete/stats-with-token` with `after` parameter set to epoch timestamp
+- Get activities from the last 7 days: Use `strava.athlete.stats-with-token` with `after` parameter set to epoch timestamp
 - Get paginated results: Use `page` and `per_page` parameters to control the number of activities returned
 - Get activities from a specific date range: Combine `after` and `before` parameters
+
+4) Fetch all pages reliably
+
+- Use `strava.athlete.fetch-all` for full-history retrieval.
+- For analytics/reporting over all activities (including Banister TRIMP), prefer this high-level tool or `strava.trimp.banister` which now uses deterministic pagination internally.
 
 ### Client config example and quick inspector test
 
@@ -189,10 +208,6 @@ This project is licensed under the GNU GENERAL PUBLIC LICENSE — see the `LICEN
 
 - Source: repository root
 - Documentation note: see `README.md` for an example MCP configuration
-
-
-
-
 
 
 
