@@ -28,7 +28,7 @@ pip install strava-activity-mcp-server
 
 ## Requirements
 
-- Python >= 3.13 (see `pyproject.toml`)
+- Python >= 3.10 (see `pyproject.toml`)
 - The package depends on `mcp[cli]` and `requests` (installed from PyPI).
 
 ## Quick start
