@@ -84,12 +84,12 @@ To avoid putting real credentials in MCP client JSON files, set your credentials
 PowerShell alternative (one-time setup):
 
 ```powershell
-[Environment]::SetEnvironmentVariable("STRAVA_CLIENT_ID", "53619", "User")
+[Environment]::SetEnvironmentVariable("STRAVA_CLIENT_ID", "YOUR_ID_HERE", "User")
 [Environment]::SetEnvironmentVariable("STRAVA_CLIENT_SECRET", "YOUR_SECRET_HERE", "User")
 ```
 
 Notes:
-- Do not include surrounding quotes in the saved value (for example store `53619`, not `"53619"`).
+- Do not include surrounding quotes in the saved value (for example store `12345`, not `"12345"`).
 - `STRAVA_CLIENT_ID` must be an integer value; otherwise tools return: `STRAVA_CLIENT_ID must be an integer`.
 
 
