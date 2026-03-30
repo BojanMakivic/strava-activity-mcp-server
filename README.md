@@ -208,6 +208,7 @@ This project is licensed under the GNU GENERAL PUBLIC LICENSE — see the `LICEN
 
 - Source: repository root
 - Documentation note: see `README.md` for an example MCP configuration
+- Changelog: see `CHANGELOG.md` for last changes
 
 
 
