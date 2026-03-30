@@ -125,6 +125,14 @@ def _summarize_activity_window(activities: list[dict[str, Any]]) -> dict[str, An
     }
 
 
+def _classify_effort_from_trimp_per_min(trimp_per_min: float) -> str:
+    if trimp_per_min > 2.2:
+        return "hard"
+    if trimp_per_min > 1.5:
+        return "moderate"
+    return "easy"
+
+
 def _validate_paging(per_page: int, max_pages: int, page: int = 1) -> dict | None:
     if page <= 0:
         return {"error": "page must be >= 1"}
@@ -1144,6 +1152,12 @@ async def banister_trimp_report(
             hr_max=float(hr_max),
             sex=sex,
         )
+        moving_time_min = float(moving_time_s) / 60.0
+        if moving_time_min > 0.0 and not math.isnan(float(trimp)):
+            trimp_per_min = float(trimp) / moving_time_min
+        else:
+            trimp_per_min = float("nan")
+        effort = _classify_effort_from_trimp_per_min(trimp_per_min) if not math.isnan(trimp_per_min) else "unknown"
 
         hr_rows.append(
             {
@@ -1154,6 +1168,8 @@ async def banister_trimp_report(
                 "moving_time_s": moving_time_s,
                 "avg_hr": avg_hr_f,
                 "trimp": trimp,
+                "TRIMP/Min": float(trimp_per_min),
+                "Effort": effort,
             }
         )
 

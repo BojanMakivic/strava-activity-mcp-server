@@ -1,6 +1,6 @@
 # Strava Activity MCP Server
 ![Python Package](https://github.com/tomekkorbak/strava-mcp-server/actions/workflows/python-package.yml/badge.svg)
-![PyPI - Version](https://img.shields.io/pypi/v/strava-activity-mcp-server.svg?style=flat-square)
+![PyPI - Version](https://img.shields.io/pypi/v/strava-activity-mcp-server)
 [![License: GNU](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://opensource.org/licenses/gpl-3-0)
 [![Python 3.13](https://img.shields.io/badge/python-3.13-blue?logo=python&logoColor=white)](https://www.python.org/downloads/release/python-3130/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/strava-activity-mcp-server)](https://pypistats.org/packages/strava-activity-mcp-server)
@@ -71,6 +71,27 @@ Steps:
 
 4. After the initial authorization, a token file named `strava_mcp_tokens.json` is created and stored in your home directory (for example on Windows: `C:\\Users\\<YourUserName>\\strava_mcp_tokens.json`). This file contains your `refresh_token`, which will be used automatically for subsequent logins. After the first authorization you do not need to open the browser flow again; future runs refresh the access token from the locally stored `refresh_token`.
 
+### Recommended credential setup on Windows (simple and persistent)
+
+To avoid putting real credentials in MCP client JSON files, set your credentials once as Windows user environment variables:
+
+1. Open Start and search for: `Edit environment variables for your account`
+2. Under **User variables**, create:
+  - `STRAVA_CLIENT_ID` = your numeric client ID (digits only, no quotes)
+  - `STRAVA_CLIENT_SECRET` = your client secret
+3. Fully restart your MCP client (for example Msty) so it picks up the new variables.
+
+PowerShell alternative (one-time setup):
+
+```powershell
+[Environment]::SetEnvironmentVariable("STRAVA_CLIENT_ID", "53619", "User")
+[Environment]::SetEnvironmentVariable("STRAVA_CLIENT_SECRET", "YOUR_SECRET_HERE", "User")
+```
+
+Notes:
+- Do not include surrounding quotes in the saved value (for example store `53619`, not `"53619"`).
+- `STRAVA_CLIENT_ID` must be an integer value; otherwise tools return: `STRAVA_CLIENT_ID must be an integer`.
+
 
 
 
@@ -103,7 +124,7 @@ Canonical tool IDs use dot notation (for example `strava.auth.url`). URI-style a
   - Output: `{ activities, token_status }` (token values redacted)
 - `strava.session.start` (alias: `strava://session/start`) — Convenience entry: if tokens exist, refresh and fetch; otherwise return an auth URL to begin initial authorization.
   - Inputs: `client_id` (int, optional), `client_secret` (str, optional), `after` (int, optional), `before` (int, optional), `page` (int, optional), `per_page` (int, optional)
-  - Output: Either `{ activities, tokens }` or `{ auth_url, token_file_checked }`
+  - Output: Either refreshed activity payload with `token_status` metadata, or `{ auth_url, token_file_checked }`
 
 - `strava.athlete.fetch-all` (alias: `strava://athlete/fetch-all`) — Fetch all pages deterministically.
   - Inputs: `access_token` (optional), `after` (optional), `before` (optional), `per_page` (default `50`), `max_pages` (default `10`), `retry_count` (default `2`), `detail_level` (`summary` default, or `detailed`), `detail_max_rows` (capped)
@@ -165,7 +186,20 @@ These filters work with the following tools:
 
 ### Client config example and quick inspector test
 
-Any MCP-capable client can launch the server using a config similar to the following (example file often called `config.json`. Be sure to enter your values here):
+Any MCP-capable client can launch the server using a config similar to the following (example file often called `mcp.json` or `config.json`).
+
+Recommended for Msty on Windows: keep real credentials out of the JSON file and rely on Windows user environment variables.
+
+```json
+{
+  "command": "uvx",
+  "args": [
+    "strava-activity-mcp-server"
+  ]
+}
+```
+
+If your MCP client supports environment-variable interpolation, this pattern may also work:
 
 ```json
 {
@@ -174,11 +208,13 @@ Any MCP-capable client can launch the server using a config similar to the follo
     "strava-activity-mcp-server"
   ],
   "env": {
-    "STRAVA_CLIENT_ID": "12345",
-    "STRAVA_CLIENT_SECRET": "e1234a12d12345f12c1f12345a123bba1d12c1"
+    "STRAVA_CLIENT_ID": "${STRAVA_CLIENT_ID}",
+    "STRAVA_CLIENT_SECRET": "${STRAVA_CLIENT_SECRET}"
   }
 }
 ```
+
+If interpolation is not supported by your MCP client, it may pass the literal text `${STRAVA_CLIENT_ID}` and `${STRAVA_CLIENT_SECRET}`. In that case, remove the `env` block and rely on inherited Windows user variables.
 
 To quickly test the server using the Model Context Protocol inspector tool, run:
 
@@ -209,10 +245,3 @@ This project is licensed under the GNU GENERAL PUBLIC LICENSE — see the `LICEN
 - Source: repository root
 - Documentation note: see `README.md` for an example MCP configuration
 - Changelog: see `CHANGELOG.md` for last changes
-
-
-
-
-
-
-

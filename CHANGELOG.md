@@ -6,8 +6,14 @@ The format is based on Keep a Changelog and this project follows Semantic Versio
 
 ## [Unreleased]
 
-### Added
-- Placeholder for upcoming changes.
+### Changed
+- Expanded README with a Windows-first credential setup guide using user environment variables for `STRAVA_CLIENT_ID` and `STRAVA_CLIENT_SECRET`.
+- Added explicit MCP client configuration guidance for `mcp.json` / `config.json` with a safer default that avoids embedding secrets in client JSON.
+- Clarified interpolation behavior (`${VAR}`) and documented fallback behavior when MCP clients do not expand variables.
+- Corrected `strava.session.start` output documentation to describe sanitized `token_status` metadata behavior.
+
+### Security
+- Documented a safer operational pattern for Msty and similar MCP clients: keep real credentials out of per-tool JSON `env` blocks when client logging can expose env values.
 
 ## [1.0.1] - 2026-03-29
 
