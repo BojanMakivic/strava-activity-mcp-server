@@ -6,7 +6,7 @@
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/strava-activity-mcp-server)](https://pypistats.org/packages/strava-activity-mcp-server)
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/strava-activity-mcp-server?period=total&units=NONE&left_color=GRAY&right_color=GREEN&left_text=total_downloads)](https://pepy.tech/projects/strava-activity-mcp-server)
 
-![image](https://github.com/user-attachments/assets/4bb214ca-1132-4e63-9390-d6eaddab50be)
+![image](https://github.com/BojanMakivic/strava-activity-mcp-server/blob/7b2cc0b43575c7f7724a8fa0cf8be67c40e3ed17/ref/image.jpg)
 
 
 
