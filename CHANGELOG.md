@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project follows Semantic Versioning.
 
-## [Unreleased]
+## [1.0.4] - 2026-03-31
 
 ### Changed
 - Expanded README with a Windows-first credential setup guide using user environment variables for `STRAVA_CLIENT_ID` and `STRAVA_CLIENT_SECRET`.
