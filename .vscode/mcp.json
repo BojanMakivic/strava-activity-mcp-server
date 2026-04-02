@@ -1,0 +1,14 @@
+{
+	"servers": {
+		"default-server": {
+			"command": "uvx",
+			"args": [
+				"strava-activity-mcp-server"
+			],
+			"env": {
+				"STRAVA_CLIENT_ID": "${env:STRAVA_CLIENT_ID}",
+				"STRAVA_CLIENT_SECRET": "${env:STRAVA_CLIENT_SECRET}"
+			}
+		}
+	}
+}
